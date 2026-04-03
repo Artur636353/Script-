@@ -1,69 +1,38 @@
--- Создаем основу GUI
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local FlyBtn = Instance.new("TextButton")
-local NoclipBtn = Instance.new("TextButton")
-local TPBtn = Instance.new("TextButton")
+-- Настройки
+local BRAINROT_NAME = "Brainrot" -- Точное название предмета "Брейнрот"
 
--- Настройка родителя (для Roblox)
-ScreenGui.Parent = game:GetService("CoreGui")
-
--- Настройка главного окна
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-MainFrame.Position = UDim2.new(0.5, -100, 0.5, -75)
-MainFrame.Size = UDim2.new(0, 200, 0, 180)
-MainFrame.Active = true
-MainFrame.Draggable = true -- Делаем окно перетаскиваемым
-
--- Заголовок
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "Universal Menu"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
--- Функция создания кнопок (для экономии места)
-local function setupButton(btn, text, pos, color)
-    btn.Parent = MainFrame
-    btn.Size = UDim2.new(0.8, 0, 0, 35)
-    btn.Position = pos
-    btn.Text = text
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = Color3.new(1, 1, 1)
-end
-
-setupButton(FlyBtn, "Fly", UDim2.new(0.1, 0, 0, 40), Color3.fromRGB(60, 120, 60))
-setupButton(NoclipBtn, "Noclip", UDim2.new(0.1, 0, 0, 85), Color3.fromRGB(60, 60, 120))
-setupButton(TPBtn, "Click TP", UDim2.new(0.1, 0, 0, 130), Color3.fromRGB(120, 60, 60))
-
--- ЛОГИКА ФУНКЦИЙ --
-
--- Fly (простой переключатель)
-FlyBtn.MouseButton1Click:Connect(function()
-    print("Fly активирован (нужен отдельный обработчик полета)")
-end)
-
--- Noclip (проход сквозь стены)
-NoclipBtn.MouseButton1Click:Connect(function()
-    game:GetService("RunService").Stepped:Connect(function()
-        if game.Players.LocalPlayer.Character then
-            for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        
+        -- Следим за добавлением предметов в персонажа (когда игрок берет предмет в руки)
+        character.ChildAdded:Connect(function(child)
+            if child:IsA("Tool") and child.Name == BRAINROT_NAME then
+                
+                print(player.Name .. " взял брейнрот! Активация защиты.")
+                
+                -- 1. Эффект Ragdoll (сбиваем с ног)
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.PlatformStand = true -- Отключаем управление телом
+                end
+                
+                -- 2. Эффект Balloon (тянем вверх)
+                -- Создаем силу, которая будет поднимать игрока
+                local torso = character:FindFirstChild("HumanoidRootPart")
+                if torso then
+                    local bodyForce = Instance.new("BodyForce")
+                    bodyForce.Name = "BalloonEffect"
+                    -- Сила вверх (зависит от веса, 5000 обычно хватает для взлета)
+                    bodyForce.Force = Vector3.new(0, 7000, 0) 
+                    bodyForce.Parent = torso
+                    
+                    -- Удаляем силу через 5 секунд, чтобы игрок не улетел в космос навсегда
+                    game.Debris:AddItem(bodyForce, 5)
+                end
+                
+                -- (Опционально) Выкидываем предмет из рук
+                child.Parent = workspace 
             end
-        end
-    end)
-end)
-
--- Click TP (Телепорт по клику мыши)
-TPBtn.MouseButton1Click:Connect(function()
-    local player = game.Players.LocalPlayer
-    local mouse = player:GetMouse()
-    mouse.Button1Down:Connect(function()
-        if mouse.Target then
-            player.Character:MoveTo(mouse.Hit.p)
-        end
+        end)
     end)
 end)
